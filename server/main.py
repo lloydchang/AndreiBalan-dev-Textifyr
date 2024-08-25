@@ -15,12 +15,26 @@ import json
 with open('../secret.json', 'r') as f:
     config = json.load(f)
     
+with open('../settings.json', 'r') as f:
+    settings = json.load(f)
+    
 SECRET_API_TOKEN = config['SECRET_API_TOKEN']
+MAX_FILE_INPUT_MB = settings['MAX_FILE_INPUT_MB']
+
+# In settings.json you can use the following:
+
+# tiny - 75MB
+# base - 142MB
+# small - 466MB
+# medium - 1.5GB
+# large - 2.9GB
+
+MODEL = settings['MODEL']
 
 
 app = Flask(__name__, static_folder="../client/dist", static_url_path="/")
 CORS(app)
-app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_INPUT_MB * 1024 * 1024
 
 
 import base64
@@ -147,7 +161,7 @@ def extract_audio_from_video(video_file_path, output_audio_path):
 
 def transcribe_audio(file_path, unique_dir):
     
-    model = whisper.load_model("base")
+    model = whisper.load_model(MODEL)
 
     result = model.transcribe(file_path, verbose=True, word_timestamps=True)
 
