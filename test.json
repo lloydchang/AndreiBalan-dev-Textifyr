@@ -1,0 +1,143 @@
+{
+  "text": " So I need a video of me talking so I can test my application, you know, and this is it.",
+  "segments": [
+    {
+      "id": 0,
+      "seek": 0,
+      "start": 0.0,
+      "end": 6.94,
+      "text": " So I need a video of me talking so I can test my application, you know, and this is it.",
+      "tokens": [
+        50364, 407, 286, 643, 257, 960, 295, 385, 1417, 370, 286, 393, 1500,
+        452, 3861, 11, 291, 458, 11, 293, 341, 307, 309, 13, 50704
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.3256548734811636,
+      "compression_ratio": 1.0875,
+      "no_speech_prob": 0.08373523503541946,
+      "words": [
+        {
+          "word": " So",
+          "start": 0.0,
+          "end": 0.46,
+          "probability": 0.38768696784973145
+        },
+        {
+          "word": " I",
+          "start": 0.46,
+          "end": 1.12,
+          "probability": 0.7244409322738647
+        },
+        {
+          "word": " need",
+          "start": 1.12,
+          "end": 1.28,
+          "probability": 0.9752882122993469
+        },
+        {
+          "word": " a",
+          "start": 1.28,
+          "end": 1.48,
+          "probability": 0.8072434663772583
+        },
+        {
+          "word": " video",
+          "start": 1.48,
+          "end": 1.82,
+          "probability": 0.9747159481048584
+        },
+        {
+          "word": " of",
+          "start": 1.82,
+          "end": 2.18,
+          "probability": 0.9791018962860107
+        },
+        {
+          "word": " me",
+          "start": 2.18,
+          "end": 2.34,
+          "probability": 0.8613482713699341
+        },
+        {
+          "word": " talking",
+          "start": 2.34,
+          "end": 2.74,
+          "probability": 0.9864510297775269
+        },
+        {
+          "word": " so",
+          "start": 2.74,
+          "end": 3.18,
+          "probability": 0.8588085174560547
+        },
+        {
+          "word": " I",
+          "start": 3.18,
+          "end": 3.28,
+          "probability": 0.9527840614318848
+        },
+        {
+          "word": " can",
+          "start": 3.28,
+          "end": 3.4,
+          "probability": 0.9974601864814758
+        },
+        {
+          "word": " test",
+          "start": 3.4,
+          "end": 3.62,
+          "probability": 0.990290105342865
+        },
+        {
+          "word": " my",
+          "start": 3.62,
+          "end": 3.9,
+          "probability": 0.9920623302459717
+        },
+        {
+          "word": " application,",
+          "start": 3.9,
+          "end": 4.64,
+          "probability": 0.9813418388366699
+        },
+        {
+          "word": " you",
+          "start": 4.84,
+          "end": 4.92,
+          "probability": 0.5809280276298523
+        },
+        {
+          "word": " know,",
+          "start": 4.92,
+          "end": 5.12,
+          "probability": 0.9983834028244019
+        },
+        {
+          "word": " and",
+          "start": 5.4,
+          "end": 6.16,
+          "probability": 0.9669472575187683
+        },
+        {
+          "word": " this",
+          "start": 6.16,
+          "end": 6.44,
+          "probability": 0.9913252592086792
+        },
+        {
+          "word": " is",
+          "start": 6.44,
+          "end": 6.6,
+          "probability": 0.9972793459892273
+        },
+        {
+          "word": " it.",
+          "start": 6.6,
+          "end": 6.94,
+          "probability": 0.9986043572425842
+        }
+      ]
+    }
+  ],
+  "language": "en"
+}
