@@ -3,6 +3,8 @@
 
 ![Hackathon Badge](https://img.shields.io/badge/Hackathon-Headstarter_Hiring_Hackathon_2-blue)
 
+[![YOUTUBE DEMO](http://img.youtube.com/vi/6L4Zfn__kiU/0.jpg)](http://www.youtube.com/watch?v=6L4Zfn__kiU "Textifyr App Demo")
+
 ## 🏆 Hackathon Project - "Headstarter Hiring Hackathon 2" (Aug 25, 2024)
 
 **This project was done in 32 hours**
