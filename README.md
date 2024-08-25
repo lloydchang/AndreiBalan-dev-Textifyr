@@ -5,7 +5,7 @@
 
 ## Check out the Youtube Demo
 
-[![YOUTUBE DEMO](http://img.youtube.com/vi/6L4Zfn__kiU/0.jpg)](http://www.youtube.com/watch?v=6L4Zfn__kiU "Textifyr App Demo")
+[Textifyr App Demo](http://www.youtube.com/watch?v=6L4Zfn__kiU "Textifyr App Demo")
 
 ## 🏆 Hackathon Project - "Headstarter Hiring Hackathon 2" (Aug 25, 2024)
 
