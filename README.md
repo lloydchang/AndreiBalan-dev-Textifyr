@@ -90,6 +90,8 @@ Modify **path.json** and **settings.json** in the root directory.
 Modify your secret API token in secret.json if you require so.
 
 ### Ensure FFmpeg and ImageMagick are installed and accessible:
+### Ensure you have fonts available in server/fonts. I am not able to share them here as the fonts are licensed.
+### Edit your code in client/src/components/SelectText.tsx accordingly to what fonts you are using.
 
 **For Linux - Ubuntu:**
 
