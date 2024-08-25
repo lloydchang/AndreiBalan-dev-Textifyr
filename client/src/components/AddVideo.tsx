@@ -17,12 +17,11 @@ const AddVideo: React.FC<AddVideoProps> = ({ onFileSelect }) => {
       const file = target.files?.[0];
       if (file) {
         if (file.size > 10 * 1024 * 1024) {
-          // 10MB size limit
           setError("File size exceeds 10MB. Please upload a smaller video.");
           return;
         }
         setIsUploading(true);
-        setError(null); // Clear any previous error
+        setError(null);
         onFileSelect(file);
       }
     };

@@ -4,19 +4,52 @@ import whisper
 import shutil
 import numpy as np
 from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, TextClip
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, abort, send_file, send_from_directory
 from flask_cors import CORS
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
+import json
+
+# If you wonder what is this for, it's used on the live demo, so I don't get random requests from anywhere else except the client
+# www.textifyr.com
+
+with open('../secret.json', 'r') as f:
+    config = json.load(f)
+    
+SECRET_API_TOKEN = config['SECRET_API_TOKEN']
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="../client/dist", static_url_path="/")
 CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
 
 import base64
 
+@app.route('/api/delete-folder', methods=['POST'])
+def delete_folder():
+    token = request.headers.get('Authorization')
+
+    if token != SECRET_API_TOKEN:
+        return abort(403, description="Forbidden: Invalid or missing token")
+    
+    unique_id = request.json.get('uniqueId')
+    unique_dir = os.path.join("videos", unique_id)
+    
+    if os.path.exists(unique_dir):
+        shutil.rmtree(unique_dir)
+        return jsonify({"message": "Folder deleted"}), 200
+    else:
+        return jsonify({"message": "Folder not found"}), 404
+
+
 @app.route('/api/process-video', methods=['POST'])
 def process_video():
+    
+    token = request.headers.get('Authorization')
+
+    if token != SECRET_API_TOKEN:
+        return abort(403, description="Forbidden: Invalid or missing token")
+    
     unique_id = request.form.get('uniqueId')
     font_size = request.form.get('fontSize')
     stroke_color = request.form.get('strokeColor')
@@ -57,23 +90,34 @@ def process_video():
 
 @app.route('/api/receive-video', methods=['POST'])
 def receive_video():
+    
+    print(request.headers)
+    
+    token = request.headers.get('Authorization')
+
+    if token != SECRET_API_TOKEN:
+        return abort(403, description="Forbidden: Invalid or missing token")
+    
     file = request.files['video']
     
     unique_id = str(uuid.uuid4())
     unique_dir = os.path.join("videos", unique_id)
     os.makedirs(unique_dir, exist_ok=True)
     
-    video_file_path = os.path.join(unique_dir, "input_video.mp4")
-    file.save(video_file_path)
+    original_video_file_path = os.path.join(unique_dir, "original_input_video.mp4")
+    compressed_video_file_path = os.path.join(unique_dir, "input_video.mp4")
+    file.save(original_video_file_path)
     
+    # Compress the video
+    compress_video(original_video_file_path, compressed_video_file_path)
+
     audio_file_path = os.path.join(unique_dir, "extracted_audio.mp3")  
 
-    extracted_audio_file = extract_audio_from_video(video_file_path, audio_file_path)
+    extracted_audio_file = extract_audio_from_video(compressed_video_file_path, audio_file_path)
     
     transcribe_audio(extracted_audio_file, unique_dir)
 
-    
-    with open(video_file_path, 'rb') as video_file:
+    with open(compressed_video_file_path, 'rb') as video_file:
         input_video = base64.b64encode(video_file.read()).decode('utf-8')
 
     srt_file_path = os.path.join(unique_dir, "subtitles.srt")
@@ -86,6 +130,12 @@ def receive_video():
         "unique_id": unique_id
     })
 
+def compress_video(input_file_path, output_file_path):
+    import subprocess
+    command = [
+        'ffmpeg', '-i', input_file_path, '-vcodec', 'libx264', '-crf', '28', output_file_path
+    ]
+    subprocess.run(command, capture_output=True, check=True)
 
 
 def extract_audio_from_video(video_file_path, output_audio_path):
@@ -234,13 +284,18 @@ def generate_video_with_subtitles(
     except Exception as e:
         print(f"An error occurred while generating the video: {e}")
 
-
-
-
 def timestamp_to_seconds(timestamp):
     h, m, s = timestamp.split(":")
     s, ms = s.split(",")
     return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000
 
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react_app(path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
+    
 if __name__ == "__main__":
     app.run(debug=True)

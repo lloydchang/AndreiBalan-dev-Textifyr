@@ -1,0 +1,7 @@
+Flask
+Flask-Cors
+moviepy
+openai-whisper
+numpy
+opencv-python
+Pillow

@@ -1,5 +1,7 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import secret from "../../../secret.json";
+import path from "../../../path.json";
 
 interface SelectTextProps {
   selectedFile: boolean;
@@ -19,6 +21,7 @@ const SelectText: React.FC<SelectTextProps> = ({
   const [letterSpacing, setLetterSpacing] = useState<string>("normal");
   const [lineSpacing, setLineSpacing] = useState<string>("normal");
   const [selectedFont, setSelectedFont] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const handleSelect = (option: string) => {
     setSelectedFont(option);
@@ -26,7 +29,9 @@ const SelectText: React.FC<SelectTextProps> = ({
 
   const handleSubmit = () => {
     if (!selectedFile) return;
-    if (uniqueId === null) return console.log("Can't receive unique ID");
+    if (uniqueId === null) return console.error("Can't receive unique ID");
+
+    setIsProcessing(true);
 
     const letterSpacingMap: { [key: string]: number } = {
       normal: 0,
@@ -44,7 +49,7 @@ const SelectText: React.FC<SelectTextProps> = ({
 
     axios
       .post(
-        "http://127.0.0.1:5000/api/process-video",
+        `${path.server}/api/process-video`,
         {
           uniqueId,
           fontSize,
@@ -59,6 +64,7 @@ const SelectText: React.FC<SelectTextProps> = ({
         },
         {
           headers: {
+            Authorization: secret.SECRET_API_TOKEN,
             "Content-Type": "multipart/form-data",
           },
           responseType: "json",
@@ -66,8 +72,6 @@ const SelectText: React.FC<SelectTextProps> = ({
         }
       )
       .then((response) => {
-        console.log(response.data);
-
         const videoData = atob(response.data.output_video);
         const byteNumbers = new Array(videoData.length);
         for (let i = 0; i < videoData.length; i++) {
@@ -76,12 +80,37 @@ const SelectText: React.FC<SelectTextProps> = ({
         const byteArray = new Uint8Array(byteNumbers);
         const videoBlob = new Blob([byteArray], { type: "video/mp4" });
         const videoUrl = URL.createObjectURL(videoBlob);
-        onNewVideo(videoUrl); // This will now pass the new video URL to the parent component
+        onNewVideo(videoUrl);
       })
       .catch((error) => {
         console.error("Error uploading file:", error);
+      })
+      .finally(() => {
+        setIsProcessing(false);
       });
   };
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (uniqueId) {
+        axios.post(
+          `${path.server}/api/delete-folder`,
+          { uniqueId },
+          {
+            headers: {
+              Authorization: secret.SECRET_API_TOKEN,
+            },
+          }
+        );
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [uniqueId]);
 
   return (
     <div className="bg-zinc-800 text-white w-full h-full flex flex-col justify-center items-center gap-4 p-4 select-none">
@@ -280,12 +309,12 @@ const SelectText: React.FC<SelectTextProps> = ({
       <div className="mt-5 w-[50%] h-[40px] grid grid-cols-1 grid-rows-1 gap-4">
         <button
           className={`text-lg font-semibold bg-neutral-900 rounded-2xl ${
-            selectedFile ? " hover:bg-neutral-950" : ""
+            selectedFile && !isProcessing ? " hover:bg-neutral-950" : ""
           }`}
-          disabled={!selectedFile}
+          disabled={!selectedFile || isProcessing}
           onClick={handleSubmit}
         >
-          Submit
+          {isProcessing ? "Processing..." : "Submit"}
         </button>
       </div>
     </div>

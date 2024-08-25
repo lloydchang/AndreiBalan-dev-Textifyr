@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import AddVideo from "../components/AddVideo";
 import SelectText from "../components/SelectText";
 import axios from "axios";
+import secret from "../../../secret.json";
+import path from "../../../path.json";
 
 const EffectsDashboard: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -10,22 +12,20 @@ const EffectsDashboard: React.FC = () => {
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
-    console.log("File received!");
 
     const formData = new FormData();
     formData.append("video", file);
 
     axios
-      .post("http://127.0.0.1:5000/api/receive-video", formData, {
+      .post(`${path.server}/api/receive-video`, formData, {
         headers: {
+          Authorization: secret.SECRET_API_TOKEN,
           "Content-Type": "multipart/form-data",
         },
         responseType: "json",
         timeout: 14400000,
       })
       .then((response) => {
-        console.log(response.data);
-
         const videoData = atob(response.data.input_video);
         const byteNumbers = new Array(videoData.length);
         for (let i = 0; i < videoData.length; i++) {
@@ -47,7 +47,7 @@ const EffectsDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen p-4">
+    <div className="flex justify-center items-center min-h-screen p-4 bg-zinc-900">
       <div className="border-2 rounded-lg p-4 flex flex-col md:flex-row justify-center items-center w-full max-w-[90vw] h-auto gap-4">
         <div className="flex flex-col justify-center items-center w-full md:w-[60%] h-full md:max-h-[90vh]">
           {outputVideoUrl ? (
