@@ -6,6 +6,7 @@ import axios from "axios";
 const EffectsDashboard: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [outputVideoUrl, setOutputVideoUrl] = useState<string | null>(null);
+  const [uniqueId, setUniqueId] = useState<string | null>(null);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -15,7 +16,7 @@ const EffectsDashboard: React.FC = () => {
     formData.append("video", file);
 
     axios
-      .post("http://127.0.0.1:5000/api/process-video", formData, {
+      .post("http://127.0.0.1:5000/api/receive-video", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -34,13 +35,15 @@ const EffectsDashboard: React.FC = () => {
         const videoBlob = new Blob([byteArray], { type: "video/mp4" });
         const videoUrl = URL.createObjectURL(videoBlob);
         setOutputVideoUrl(videoUrl);
-
-        const subtitlesText = response.data.subtitles;
-        console.log("Subtitles:", subtitlesText);
+        setUniqueId(response.data.unique_id);
       })
       .catch((error) => {
         console.error("Error uploading file:", error);
       });
+  };
+
+  const handleNewVideo = (newVideoUrl: string) => {
+    setOutputVideoUrl(newVideoUrl); // Update the video URL to display the new video
   };
 
   return (
@@ -49,7 +52,11 @@ const EffectsDashboard: React.FC = () => {
         <div className="flex flex-col justify-center items-center w-full md:w-[60%] h-full md:max-h-[90vh]">
           {outputVideoUrl ? (
             <div className="w-full h-full flex items-center justify-center rounded-lg overflow-hidden">
-              <video controls className="max-w-full max-h-full">
+              <video
+                key={outputVideoUrl}
+                controls
+                className="max-w-full max-h-full"
+              >
                 <source src={outputVideoUrl} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
@@ -59,7 +66,11 @@ const EffectsDashboard: React.FC = () => {
           )}
         </div>
         <div className="flex flex-col justify-center items-center w-full md:w-[40%] h-auto max-h-[90vh] overflow-auto">
-          <SelectText />
+          <SelectText
+            selectedFile={selectedFile !== null}
+            uniqueId={uniqueId}
+            onNewVideo={handleNewVideo}
+          />
         </div>
       </div>
     </div>

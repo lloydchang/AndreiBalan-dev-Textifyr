@@ -1,6 +1,7 @@
 import os
 import uuid
 import whisper
+import shutil
 import numpy as np
 from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, TextClip
 from flask import Flask, jsonify, request, send_file
@@ -9,13 +10,53 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
 
 import base64
 
 @app.route('/api/process-video', methods=['POST'])
 def process_video():
+    unique_id = request.form.get('uniqueId')
+    font_size = request.form.get('fontSize')
+    stroke_color = request.form.get('strokeColor')
+    stroke_width = request.form.get('strokeWidth')
+    transparent = request.form.get('transparent') == 'true'
+    letter_spacing = request.form.get('letterSpacing')
+    line_spacing = request.form.get('lineSpacing')
+    selected_font = request.form.get('selectedFont')
+    
+    unique_dir = os.path.join("videos", unique_id)
+    video_file_path = os.path.join(unique_dir, "input_video.mp4")
+    
+    generate_video_with_subtitles(
+        video_file_path, 
+        os.path.join(unique_dir, "subtitles.srt"),
+        font_size, 
+        stroke_color, 
+        stroke_width, 
+        transparent, 
+        letter_spacing, 
+        line_spacing, 
+        selected_font
+    )
+    
+    video_file_output = os.path.join(unique_dir, "output_video.mp4")
+
+
+    with open(video_file_output, 'rb') as video_file:
+        output_video = base64.b64encode(video_file.read()).decode('utf-8')
+
+
+    return jsonify({
+        "output_video": output_video,
+        "unique_id": unique_id
+    })
+
+
+
+@app.route('/api/receive-video', methods=['POST'])
+def receive_video():
     file = request.files['video']
     
     unique_id = str(uuid.uuid4())
@@ -30,10 +71,6 @@ def process_video():
     extracted_audio_file = extract_audio_from_video(video_file_path, audio_file_path)
     
     transcribe_audio(extracted_audio_file, unique_dir)
-    
-    generate_video_with_subtitles(video_file_path, os.path.join(unique_dir, "subtitles.srt"))
-    
-    # video_file_path_output = os.path.join(unique_dir, "output_video.mp4")
 
     
     with open(video_file_path, 'rb') as video_file:
@@ -45,7 +82,8 @@ def process_video():
 
     return jsonify({
         "input_video": input_video,
-        "subtitles": subtitles
+        "subtitles": subtitles,
+        "unique_id": unique_id
     })
 
 
@@ -66,7 +104,6 @@ def transcribe_audio(file_path, unique_dir):
     print("\nTranscription:")
     print(result["text"])
 
-    # Save transcription to the unique directory
     with open(os.path.join(unique_dir, "transcription.txt"), "w", encoding="utf-8") as f:
         f.write(result["text"])
 
@@ -116,17 +153,50 @@ def format_timestamp(seconds):
     
     return f"{hours:02}:{minutes:02}:{secs:02},{milliseconds:03}"
 
-def generate_video_with_subtitles(original_video_file, srt_file):
+def generate_video_with_subtitles(
+    original_video_file, 
+    srt_file, 
+    font_size, 
+    stroke_color, 
+    stroke_width, 
+    transparent, 
+    letter_spacing, 
+    line_spacing, 
+    selected_font
+):
     try:
         video = VideoFileClip(original_video_file)
         audio = video.audio
         print(f"Video file loaded successfully. Duration: {video.duration} seconds")
 
         video_width, video_height = video.size
-        font_size = int(video_height * 0.074)  # Slightly increase the font size to 6% of the video height
 
-        # Path to your Proxima Nova TTF file
-        font_path = "./ProximaNova-Bold.ttf"  # Replace with the actual path to your TTF file
+        font_size_map = {
+            "small": int(video_height * 0.04),
+            "medium": int(video_height * 0.06),
+            "large": int(video_height * 0.08)
+        }
+        font_size = font_size_map.get(font_size, int(video_height * 0.06))  # Default to medium if not specified
+
+        color = 'white' if not transparent else 'rgba(255, 255, 255, 0.5)'
+
+        letter_spacing_map = {
+            "normal": 0,
+            "wide": 2,
+            "wider": 4,
+            "widest": 6
+        }
+        line_spacing_map = {
+            "normal": 0,
+            "wide": 1.5,
+            "wider": 2,
+            "widest": 2.5
+        }
+
+        letter_spacing_value = letter_spacing_map.get(letter_spacing, 0)
+        line_spacing_value = line_spacing_map.get(line_spacing, 0)
+                
+        font_path = f"./fonts/{selected_font}" if selected_font else "./fonts/ProximaNova_Bold.ttf"
 
         subtitle_clips = []
         with open(srt_file, 'r', encoding="utf-8") as f:
@@ -138,19 +208,19 @@ def generate_video_with_subtitles(original_video_file, srt_file):
                 
                 text = lines[i+2].strip().upper()
 
-                # Create the TextClip using the TTF file directly
                 subtitle = TextClip(
                     text,
                     fontsize=font_size,
-                    color='white',
-                    font=font_path,  # Use the TTF file path here
-                    stroke_color='black',
-                    stroke_width=3.8,  # Increase stroke width slightly
+                    color=color,
+                    font=font_path,  
+                    stroke_color=stroke_color,
+                    stroke_width=int(stroke_width),
                     method='caption',
-                    size=(int(video_width * 0.8), None)  # Set width to 80% of the video width
+                    size=(int(video_width * 0.8), None),  
+                    kerning=letter_spacing_value,  
+                    interline=line_spacing_value 
                 )
 
-                # Position the text slightly above the bottom (25% from the bottom)
                 subtitle = subtitle.set_position(('center', video_height * 0.72))
                 subtitle = subtitle.set_start(start_time).set_end(end_time)
                 
@@ -163,6 +233,8 @@ def generate_video_with_subtitles(original_video_file, srt_file):
             print("Video created!")
     except Exception as e:
         print(f"An error occurred while generating the video: {e}")
+
+
 
 
 def timestamp_to_seconds(timestamp):
