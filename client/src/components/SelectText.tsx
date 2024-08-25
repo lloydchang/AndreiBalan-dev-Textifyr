@@ -1,6 +1,19 @@
-import React, { useState } from "react";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import secret from "../../../secret.json";
+import path from "../../../path.json";
 
-const SelectText: React.FC = () => {
+interface SelectTextProps {
+  selectedFile: boolean;
+  uniqueId: string | null;
+  onNewVideo: (newVideoUrl: string) => void;
+}
+
+const SelectText: React.FC<SelectTextProps> = ({
+  selectedFile,
+  uniqueId,
+  onNewVideo,
+}) => {
   const [fontSize, setFontSize] = useState<string>("medium");
   const [strokeColor, setStrokeColor] = useState<string>("black");
   const [strokeWidth, setStrokeWidth] = useState<string>("2");
@@ -8,13 +21,99 @@ const SelectText: React.FC = () => {
   const [letterSpacing, setLetterSpacing] = useState<string>("normal");
   const [lineSpacing, setLineSpacing] = useState<string>("normal");
   const [selectedFont, setSelectedFont] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const handleSelect = (option: string) => {
     setSelectedFont(option);
   };
 
+  const handleSubmit = () => {
+    if (!selectedFile) return;
+    if (uniqueId === null) return console.error("Can't receive unique ID");
+
+    setIsProcessing(true);
+
+    const letterSpacingMap: { [key: string]: number } = {
+      normal: 0,
+      wide: 2,
+      wider: 4,
+      widest: 6,
+    };
+
+    const lineSpacingMap: { [key: string]: number } = {
+      normal: 0,
+      wide: 1.5,
+      wider: 2,
+      widest: 2.5,
+    };
+
+    axios
+      .post(
+        `${path.server}/api/process-video`,
+        {
+          uniqueId,
+          fontSize,
+          strokeColor,
+          strokeWidth,
+          transparent,
+          letterSpacing:
+            letterSpacingMap[letterSpacing as keyof typeof letterSpacingMap],
+          lineSpacing:
+            lineSpacingMap[lineSpacing as keyof typeof lineSpacingMap],
+          selectedFont,
+        },
+        {
+          headers: {
+            Authorization: secret.SECRET_API_TOKEN,
+            "Content-Type": "multipart/form-data",
+          },
+          responseType: "json",
+          timeout: 14400000,
+        }
+      )
+      .then((response) => {
+        const videoData = atob(response.data.output_video);
+        const byteNumbers = new Array(videoData.length);
+        for (let i = 0; i < videoData.length; i++) {
+          byteNumbers[i] = videoData.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const videoBlob = new Blob([byteArray], { type: "video/mp4" });
+        const videoUrl = URL.createObjectURL(videoBlob);
+        onNewVideo(videoUrl);
+      })
+      .catch((error) => {
+        console.error("Error uploading file:", error);
+      })
+      .finally(() => {
+        setIsProcessing(false);
+      });
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (uniqueId) {
+        axios.post(
+          `${path.server}/api/delete-folder`,
+          { uniqueId },
+          {
+            headers: {
+              Authorization: secret.SECRET_API_TOKEN,
+            },
+          }
+        );
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [uniqueId]);
+
   return (
-    <div className="bg-zinc-800 text-white w-full h-full flex flex-col justify-center items-center gap-4 p-4">
+    <div className="bg-zinc-800 text-white w-full h-full flex flex-col justify-center items-center gap-4 p-4 select-none">
       <div className="w-full h-full grid grid-cols-2 grid-rows-4 gap-4">
         {/* Font Size */}
         <label className="flex flex-col gap-2">
@@ -23,6 +122,7 @@ const SelectText: React.FC = () => {
             className="p-2 rounded text-black"
             value={fontSize}
             onChange={(e) => setFontSize(e.target.value)}
+            disabled={!selectedFile}
           >
             <option value="small">Small</option>
             <option value="medium">Medium</option>
@@ -37,6 +137,7 @@ const SelectText: React.FC = () => {
             className="p-2 rounded text-black"
             value={strokeColor}
             onChange={(e) => setStrokeColor(e.target.value)}
+            disabled={!selectedFile}
           >
             <option value="black">Black</option>
             <option value="white">White</option>
@@ -52,6 +153,7 @@ const SelectText: React.FC = () => {
             className="p-2 rounded text-black"
             value={strokeWidth}
             onChange={(e) => setStrokeWidth(e.target.value)}
+            disabled={!selectedFile}
           >
             <option value="1">1px</option>
             <option value="2">2px</option>
@@ -67,11 +169,12 @@ const SelectText: React.FC = () => {
             className="hidden peer"
             checked={transparent}
             onChange={() => setTransparent(!transparent)}
+            disabled={!selectedFile}
           />
           <div
             className={`flex items-center justify-center w-20 h-8 rounded-full cursor-pointer transition-all duration-300 ${
               transparent ? "bg-blue-500 text-white" : "bg-gray-300 text-black"
-            }`}
+            } ${!selectedFile ? "bg-gray-400 text-gray-700" : ""}`}
           >
             {transparent ? "On" : "Off"}
           </div>
@@ -87,6 +190,7 @@ const SelectText: React.FC = () => {
             className="p-2 rounded text-black"
             value={letterSpacing}
             onChange={(e) => setLetterSpacing(e.target.value)}
+            disabled={!selectedFile}
           >
             <option value="normal">Normal</option>
             <option value="wide">Wide</option>
@@ -102,6 +206,7 @@ const SelectText: React.FC = () => {
             className="p-2 rounded text-black"
             value={lineSpacing}
             onChange={(e) => setLineSpacing(e.target.value)}
+            disabled={!selectedFile}
           >
             <option value="normal">Normal</option>
             <option value="wide">Wide</option>
@@ -114,83 +219,102 @@ const SelectText: React.FC = () => {
       <div className="w-full h-full grid grid-cols-2 grid-rows-4 gap-4">
         <button
           className={`p-2 rounded ${
-            selectedFont === "Option 1"
+            selectedFont === "ProximaNova_Bold.ttf"
               ? "bg-blue-500 text-white"
-              : "bg-white text-black"
+              : `bg-gray-200 ${selectedFile ? "text-black" : "text-gray-500"}`
           }`}
-          onClick={() => handleSelect("Option 1")}
+          onClick={() => handleSelect("ProximaNova_Bold.ttf")}
+          disabled={!selectedFile}
         >
-          Option 1
+          ProximaNova
         </button>
         <button
           className={`p-2 rounded ${
-            selectedFont === "Option 2"
+            selectedFont === "Arial_Bold.ttf"
               ? "bg-blue-500 text-white"
-              : "bg-white text-black"
+              : `bg-gray-200 ${selectedFile ? "text-black" : "text-gray-500"}`
           }`}
-          onClick={() => handleSelect("Option 2")}
+          onClick={() => handleSelect("Arial_Bold.ttf")}
+          disabled={!selectedFile}
         >
-          Option 2
+          Arial
         </button>
         <button
           className={`p-2 rounded ${
-            selectedFont === "Option 3"
+            selectedFont === "Futura_Bold.ttf"
               ? "bg-blue-500 text-white"
-              : "bg-white text-black"
+              : `bg-gray-200 ${selectedFile ? "text-black" : "text-gray-500"}`
           }`}
-          onClick={() => handleSelect("Option 3")}
+          onClick={() => handleSelect("Futura_Bold.ttf")}
+          disabled={!selectedFile}
         >
-          Option 3
+          Futura
         </button>
         <button
           className={`p-2 rounded ${
-            selectedFont === "Option 4"
+            selectedFont === "Lato_Bold.ttf"
               ? "bg-blue-500 text-white"
-              : "bg-white text-black"
+              : `bg-gray-200 ${selectedFile ? "text-black" : "text-gray-500"}`
           }`}
-          onClick={() => handleSelect("Option 4")}
+          onClick={() => handleSelect("Lato_Bold.ttf")}
+          disabled={!selectedFile}
         >
-          Option 4
+          Lato
         </button>
         <button
           className={`p-2 rounded ${
-            selectedFont === "Option 5"
+            selectedFont === "Quicksand.ttf"
               ? "bg-blue-500 text-white"
-              : "bg-white text-black"
+              : `bg-gray-200 ${selectedFile ? "text-black" : "text-gray-500"}`
           }`}
-          onClick={() => handleSelect("Option 5")}
+          onClick={() => handleSelect("Quicksand.ttf")}
+          disabled={!selectedFile}
         >
-          Option 5
+          Quicksand
         </button>
         <button
           className={`p-2 rounded ${
-            selectedFont === "Option 6"
+            selectedFont === "OpenSans.ttf"
               ? "bg-blue-500 text-white"
-              : "bg-white text-black"
+              : `bg-gray-200 ${selectedFile ? "text-black" : "text-gray-500"}`
           }`}
-          onClick={() => handleSelect("Option 6")}
+          onClick={() => handleSelect("OpenSans.ttf")}
+          disabled={!selectedFile}
         >
-          Option 6
+          OpenSans
         </button>
         <button
           className={`p-2 rounded ${
-            selectedFont === "Option 7"
+            selectedFont === "Poppins_Bold.ttf"
               ? "bg-blue-500 text-white"
-              : "bg-white text-black"
+              : `bg-gray-200 ${selectedFile ? "text-black" : "text-gray-500"}`
           }`}
-          onClick={() => handleSelect("Option 7")}
+          onClick={() => handleSelect("Poppins_Bold.ttf")}
+          disabled={!selectedFile}
         >
-          Option 7
+          Poppins
         </button>
         <button
           className={`p-2 rounded ${
-            selectedFont === "Option 8"
+            selectedFont === "Roboto_Bold.ttf"
               ? "bg-blue-500 text-white"
-              : "bg-white text-black"
+              : `bg-gray-200 ${selectedFile ? "text-black" : "text-gray-500"}`
           }`}
-          onClick={() => handleSelect("Option 8")}
+          onClick={() => handleSelect("Roboto_Bold.ttf")}
+          disabled={!selectedFile}
         >
-          Option 8
+          Roboto
+        </button>
+      </div>
+      <div className="mt-5 w-[50%] h-[40px] grid grid-cols-1 grid-rows-1 gap-4">
+        <button
+          className={`text-lg font-semibold bg-neutral-900 rounded-2xl ${
+            selectedFile && !isProcessing ? " hover:bg-neutral-950" : ""
+          }`}
+          disabled={!selectedFile || isProcessing}
+          onClick={handleSubmit}
+        >
+          {isProcessing ? "Processing..." : "Submit"}
         </button>
       </div>
     </div>
