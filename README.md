@@ -3,7 +3,7 @@
 
 ![Hackathon Badge](https://img.shields.io/badge/Hackathon-Headstarter_Hiring_Hackathon_2-blue)
 
-### 🏆 Hackathon Project - "Headstarter Hiring Hackathon 2" (Aug 25, 2024)
+## 🏆 Hackathon Project - "Headstarter Hiring Hackathon 2" (Aug 25, 2024)
 
 **This project was done in 32 hours**
 
