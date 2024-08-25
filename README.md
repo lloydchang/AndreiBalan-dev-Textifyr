@@ -25,14 +25,14 @@ Inspired by the need for accessible video editing tools, Textifyr was created to
 
 ## 🔧 Built With
 
-**React (TypeScript)**: For building the dynamic and interactive user interface.
-**Flask**: To handle API requests and serve the React app.
-**Whisper (by OpenAI)**: For AI-driven transcription of video audio.
-**MoviePy**: To generate and embed subtitles in the video.
-**Gunicorn**: For serving the Flask application in a production environment.
-**Nginx**: As a reverse proxy to handle requests and serve static files.
-**FFmpeg**: For video compression and processing.
-**ImageMagick**: For handling image operations required in video processing.
+- **React (TypeScript)**: For building the dynamic and interactive user interface.
+- **Flask**: To handle API requests and serve the React app.
+- **Whisper (by OpenAI)**: For AI-driven transcription of video audio.
+- **MoviePy**: To generate and embed subtitles in the video.
+- **Gunicorn**: For serving the Flask application in a production environment.
+- **Nginx**: As a reverse proxy to handle requests and serve static files.
+- **FFmpeg**: For video compression and processing.
+- **ImageMagick**: For handling image operations required in video processing.
 
 ## 🧩 Features
 
